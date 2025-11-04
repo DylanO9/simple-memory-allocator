@@ -1,9 +1,8 @@
 // Design: First-fit allocation
 #include <stdio.h>
+#include <string.h>
 
 #define NALLOC  1024 /* minimum #units to request */
-
-void *my_malloc(size_t);
 
 typedef long Align; // long is the most restrictive type. We want to make sure we are always aligning on memory, therefore, we use the most restrictive type
 union header {
@@ -13,14 +12,21 @@ union header {
     } s;
     Align x;
 };
+
 typedef union header Header;
 static Header base; // Start with an empty list
 static Header *freep = NULL; // Start of the free list
 
+void *my_malloc(size_t);
+static Header *morecore(unsigned);
 void my_free(void *ap);
 
 int main() {
-
+    char *new_name = my_malloc(10);
+    new_name[0] = '\0';
+    strcat(new_name, "Hi");
+    printf("new name: %s\n", new_name);
+    return 0;
 }
 
 void *my_malloc(size_t n) {
@@ -61,9 +67,35 @@ void *my_malloc(size_t n) {
 }
 
 void my_free(void *ap) {
+    // Okay, so we are given the pointer to free
+    // This pointer is the memory that we gave them, so one sizeof(Header) backwards means that is where our first header lies
 
+    // When we free what are we doing? We are adding the block back to the free list that we have
+    // The memory inside of this is potentially already been messed up with garbage inside
+    
+    // Our goal of this is to take the memory, potentially clear it, then place the memory back into our list
+    Header *ptr = (Header *)ap - 1; // Cast ap to a Header, so subtracting one subtracts the size of one Header element    
+    
+    // We want to place the block, so that the list stays in an order of growing addresses. We can compare addresses by just using the value of the pointers
+    Header *p, *prevp;
+    for (p = freep; !(p < ptr && ptr < ptr->s.ptr); p = p->s.ptr)
+        if (p >= p->s.ptr && (p > ptr || ptr > p->s.ptr ))
+            break;
+    // Now we have the spot to insert
+    // Coalesce if the addresses are adjacent
+    if (ptr + ptr->s.size == p->s.ptr) {
+        ptr->s.size += p->s.ptr->s.size;
+        ptr->s.ptr = p->s.ptr->s.ptr; 
+    } else
+        ptr->s.ptr = p->s.ptr;
+    if (p + p->s.size == ptr) {
+        p->s.size += ptr->s.size;
+        p->s.ptr = ptr->s.ptr;
+    } else
+        p->s.ptr = ptr; 
+    freep = p;        
 }
 
 static Header *morecore(unsigned nu) {
-
+   
 }
