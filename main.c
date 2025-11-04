@@ -10,6 +10,11 @@ union header {
     } s;
     Align x;
 };
+typedef union header Header;
+static Header base;
+static Header *freep = NULL;
+
+void my_free(void *ap);
 
 int main() {
 
@@ -18,4 +23,8 @@ int main() {
 
 void *my_malloc(size_t n) {
     
+}
+
+void my_free(void *ap) {
+
 }
