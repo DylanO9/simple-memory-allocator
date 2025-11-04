@@ -1,4 +1,6 @@
 // Design: First-fit allocation
+#include <unistd.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -97,5 +99,20 @@ void my_free(void *ap) {
 }
 
 static Header *morecore(unsigned nu) {
-   
+    // What do we do in morecore?
+    // Obtain storage from the operating system
+        // use sbrk(total)
+    char *cp; // This is our char pointer
+    Header *up;
+    
+    if (nu < NALLOC) // We need nu to be at least size of nalloc
+        nu = NALLOC;
+    
+    cp = sbrk(nu * sizeof(Header)); // Want nu * sizeof(Header) because..
+    if (cp == (char *) -1)
+        return NULL;
+    up = (Header *) cp;
+    up->s.size = nu;
+    my_free((void *)(up+1));
+    return freep;     
 }
